@@ -78,11 +78,18 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void createOrder() async {
-    if(cart == null || cart!.cartItemDTOList.isEmpty) {
+    if (cart == null || cart!.cartItemDTOList.isEmpty) {
       print("Cart is empty");
       return;
     }
-    final response = await ApiService.createOrder(cart!, addressController.text, selectedPaymentMethod);
+    if (addressController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Vui lòng nhập địa chỉ")),
+      );
+      return;
+    }
+    final response = await ApiService.createOrder(
+        cart!, addressController.text, selectedPaymentMethod);
     if (response.statusCode == 201) {
       print("Order created successfully!");
     } else {
