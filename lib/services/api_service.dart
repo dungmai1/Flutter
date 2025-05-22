@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shop/models/cart_response.dart';
 import 'package:shop/models/customer.dart';
+import 'package:shop/models/mail.dart';
 import 'package:shop/models/order_item.dart';
 import 'package:shop/route/screen_export.dart';
 import 'package:shop/tokenStorage/token_storage.dart';
@@ -255,6 +256,38 @@ class ApiService {
     } else {
       throw Exception(
           'Failed to load orders by status: ${response.statusCode}');
+    }
+  }
+
+  static Future<String> SendEmail(SendEmailRequest request) async {
+    final response = await http.post(
+      Uri.parse("$_baseUrl/email/send-code"),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode == 200) {
+      return response.body;
+    } else {
+      throw Exception("❌ Failed to send code: ${response.statusCode}");
+    }
+  }
+
+  static Future<bool> verifyCode(String email, String code) async {
+    final response = await http.post(
+      Uri.parse("$_baseUrl/email/verify-code"),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'email': email, 'code': code}),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      return false;
     }
   }
 }

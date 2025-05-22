@@ -19,6 +19,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
+  final verifyCodeController = TextEditingController();
 
   @override
   void dispose() {
@@ -30,19 +31,48 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void handleSignUp() async {
-    final response = await ApiService.signUpUser(
-        int.parse(phoneController.text),
-        passwordController.text,
-        emailController.text,
-        nameController.text);
-    if (response.statusCode == 200) {
-      Navigator.pushNamed(context, logInScreenRoute);
+    final email = emailController.text.trim();
+    final code = verifyCodeController.text.trim();
+
+    if (email.isEmpty || code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Register Success")),
+        const SnackBar(
+            content: Text("Email and verification code are required")),
       );
-    } else {
+      return;
+    }
+
+    try {
+      // Bước 1: Xác minh mã xác thực
+      final verifySuccess = await ApiService.verifyCode(email, code);
+
+      if (verifySuccess) {
+        // Bước 2: Gọi API đăng ký nếu xác minh thành công
+        final response = await ApiService.signUpUser(
+          int.parse(phoneController.text),
+          passwordController.text,
+          email,
+          nameController.text,
+        );
+
+        if (response.statusCode == 200) {
+          Navigator.pushNamed(context, logInScreenRoute);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Register Success")),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Register failed")),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Verification code is incorrect")),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Register failed")),
+        SnackBar(content: Text("Error: $e")),
       );
     }
   }
@@ -78,7 +108,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       nameController: nameController,
                       emailController: emailController,
                       phoneController: phoneController,
-                      passwordController: passwordController),
+                      passwordController: passwordController,
+                      verifyCodeController: verifyCodeController),
                   const SizedBox(height: defaultPadding),
                   // Row(
                   //   children: [
